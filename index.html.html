@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iron Journal</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+:root{--bg:#0e0f11;--surface:#16181c;--surface2:#1e2127;--surface3:#262a32;--border:#2e333d;--accent:#c8f564;--accent2:#64c8f5;--accent3:#f5a264;--text:#eaeef4;--text2:#8a92a0;--text3:#555e6e;--red:#f56464;--green:#64f58d;--serif:'DM Serif Display',Georgia,serif;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--radius:10px;--radius-lg:16px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;min-height:100vh;}
+.nav{display:flex;align-items:center;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;padding:0 1.5rem;}
+.nav-logo{font-family:var(--serif);font-size:22px;color:var(--accent);padding:1rem 1.5rem 1rem 0;border-right:1px solid var(--border);margin-right:1rem;letter-spacing:-0.5px;white-space:nowrap;}
+.nav-logo span{font-style:italic;color:var(--text2);font-size:14px;display:block;font-family:var(--sans);font-weight:300;}
+.nav-tabs{display:flex;flex:1;overflow-x:auto;}
+.nav-tab{padding:0 1.1rem;height:60px;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-sync{margin-left:auto;display:flex;align-items:center;gap:10px;padding-left:1rem;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.busy{background:var(--accent3);}
+.sync-dot.err{background:var(--red);}
+.sync-label{font-size:12px;color:var(--text3);}
+.page{display:none;padding:2rem 1.5rem;max-width:900px;margin:0 auto;}
+.page.active{display:block;}
+.page-title{font-family:var(--serif);font-size:36px;color:var(--text);margin-bottom:4px;letter-spacing:-0.5px;}
+.page-sub{color:var(--text2);font-size:14px;margin-bottom:2rem;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.card-title{font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;}
+select,input[type=text],input[type=number],input[type=date],textarea{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--sans);font-size:14px;padding:10px 14px;outline:none;width:100%;transition:border-color .15s;}
+select:focus,input:focus,textarea:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:80px;}
+label{font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1rem;}
+.form-group{display:flex;flex-direction:column;}
+.btn{padding:10px 20px;border-radius:var(--radius);border:none;cursor:pointer;font-family:var(--sans);font-size:14px;font-weight:500;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#0e0f11;}
+.btn-primary:hover{background:#d8ff70;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--surface3);}
+.btn-sm{padding:6px 14px;font-size:12px;border-radius:8px;}
+.btn-row{display:flex;gap:10px;margin-top:1rem;flex-wrap:wrap;}
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;display:inline-block;}
+.badge-green{background:#1a3d22;color:var(--green);}
+.badge-blue{background:#1a2e3d;color:var(--accent2);}
+.badge-amber{background:#3d2c1a;color:var(--accent3);}
+.week-selector{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;margin-bottom:1.5rem;}
+.wk-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px;text-align:center;cursor:pointer;transition:all .15s;}
+.wk-btn:hover{border-color:var(--accent);}
+.wk-btn.active{background:var(--accent);border-color:var(--accent);}
+.wk-btn.active .wk-num,.wk-btn.active .wk-phase{color:#0e0f11;}
+.wk-num{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text);}
+.wk-phase{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);}
+.wk-btn.done{border-color:var(--green);}
+.wk-btn.done .wk-num{color:var(--green);}
+.day-strip{display:flex;gap:6px;margin-bottom:1.5rem;flex-wrap:wrap;}
+.day-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .15s;}
+.day-btn:hover{color:var(--text);border-color:var(--text3);}
+.day-btn.active{background:var(--surface3);border-color:var(--accent);color:var(--accent);}
+.day-btn.walk-day{border-left:3px solid var(--green);}
+.day-btn.strength-day{border-left:3px solid var(--accent2);}
+.day-btn.rest-day{border-left:3px solid var(--text3);}
+.day-btn.combo-day{border-left:3px solid var(--accent3);}
+.ex-name{font-weight:500;font-size:14px;color:var(--text);}
+.ex-target{font-size:12px;color:var(--text3);font-family:var(--mono);}
+.ex-note{font-size:12px;color:var(--text2);font-style:italic;margin-top:2px;}
+.set-row{display:grid;grid-template-columns:40px 90px 90px 1fr;gap:8px;align-items:center;margin-bottom:6px;}
+.set-row-header{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;display:grid;grid-template-columns:40px 90px 90px 1fr;gap:8px;}
+.set-num{font-family:var(--mono);font-size:13px;color:var(--text3);text-align:center;}
+.set-row input{text-align:center;}
+.feel-row{display:flex;gap:8px;flex-wrap:wrap;}
+.feel-opt{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;}
+.feel-opt:hover{border-color:var(--text3);color:var(--text);}
+.feel-opt.sel-1{background:#3d1a1a;border-color:var(--red);color:var(--red);}
+.feel-opt.sel-2{background:#3d2c1a;border-color:var(--accent3);color:var(--accent3);}
+.feel-opt.sel-3{background:var(--surface3);border-color:var(--text3);color:var(--text);}
+.feel-opt.sel-4{background:#1a2e1a;border-color:#a8d8a8;color:#a8d8a8;}
+.feel-opt.sel-5{background:#1a3d22;border-color:var(--green);color:var(--green);}
+.history-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.hi-left{flex:1;}
+.hi-title{font-size:14px;font-weight:500;color:var(--text);}
+.hi-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+.hi-right{text-align:right;}
+.hi-date{font-size:12px;color:var(--text3);font-family:var(--mono);}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.5rem;}
+.stat-card{background:var(--surface2);border-radius:var(--radius);padding:1rem;}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.stat-val{font-size:22px;font-weight:500;color:var(--text);font-family:var(--mono);}
+.stat-unit{font-size:13px;color:var(--text2);}
+.stat-delta{font-size:12px;margin-top:2px;}
+.delta-pos{color:var(--green);}
+.delta-neg{color:var(--red);}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.photo-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.photo-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;}
+.photo-meta{padding:8px 10px;}
+.photo-week{font-size:12px;font-weight:500;color:var(--accent);font-family:var(--mono);}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.compare-card{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.compare-card img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--surface2);}
+.compare-label{padding:10px 14px;background:var(--surface2);}
+.compare-placeholder{width:100%;aspect-ratio:3/4;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;}
+.inner-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
+.inner-tab{padding:10px 20px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.inner-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.inner-page{display:none;}
+.inner-page.active{display:block;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--accent);color:#0e0f11;padding:12px 20px;border-radius:var(--radius);font-weight:500;font-size:14px;z-index:999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.empty{text-align:center;padding:3rem 1rem;color:var(--text3);}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.4;}
+
+/* AUTH SCREEN */
+.auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:2rem;}
+.auth-logo{font-family:var(--serif);font-size:56px;color:var(--accent);margin-bottom:8px;letter-spacing:-1px;}
+.auth-tagline{font-size:16px;color:var(--text2);margin-bottom:3rem;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem 2.5rem;max-width:420px;width:100%;}
+.auth-title{font-size:18px;font-weight:500;margin-bottom:8px;}
+.auth-sub{font-size:14px;color:var(--text2);margin-bottom:1.5rem;line-height:1.6;}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;color:#333;border:none;border-radius:var(--radius);padding:13px 24px;font-size:15px;font-weight:500;cursor:pointer;width:100%;transition:background .15s;font-family:var(--sans);}
+.google-btn:hover{background:#f0f0f0;}
+.google-btn svg{flex-shrink:0;}
+.setup-link{font-size:13px;color:var(--text3);margin-top:1.5rem;line-height:1.7;}
+.setup-link a{color:var(--accent2);}
+.client-id-row{display:flex;gap:8px;margin-bottom:1rem;}
+.client-id-row input{flex:1;}
+
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:600px){.nav-logo span{display:none;}.page{padding:1.25rem 1rem;}.compare-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-logo">Iron Journal</div>
+  <div class="auth-tagline" style="font-style:italic;">12-Week Transformation Tracker</div>
+  <div class="auth-card">
+    <div class="auth-title">Connect to Google Drive</div>
+    <div class="auth-sub">Your workout data, progress photos, and measurements will be saved to your Google Drive and sync across all your devices automatically.</div>
+
+    <div id="client-id-section">
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Your Google OAuth Client ID</label>
+        <div class="client-id-row">
+          <input type="text" id="client-id-input" placeholder="Paste your Client ID here (ends in .apps.googleusercontent.com)">
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:6px;">
+          One-time setup. See instructions below, then this screen will be replaced by your journal.
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:1rem;" onclick="initWithClientId()">Connect &amp; Sign in with Google</button>
+    </div>
+
+    <div id="gsi-button-container" style="display:none;justify-content:center;"></div>
+
+    <div class="setup-link">
+      <strong style="color:var(--text2);">First time? 2-minute setup:</strong><br>
+      1. Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a><br>
+      2. Create a project → Enable <strong>Google Drive API</strong><br>
+      3. APIs &amp; Services → Credentials → Create OAuth 2.0 Client ID<br>
+      4. Application type: <strong>Web application</strong><br>
+      5. Authorised JavaScript origins: add the path to this file<br>&nbsp;&nbsp;&nbsp;e.g. <code style="color:var(--accent2);">file://</code> or your hosting URL<br>
+      6. Copy the Client ID and paste above
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none;">
+<nav class="nav">
+  <div class="nav-logo">Iron Journal<span>12-Week Transformation</span></div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('workout',this)">Workout</div>
+    <div class="nav-tab" onclick="showPage('walks',this)">Walks</div>
+    <div class="nav-tab" onclick="showPage('progress',this)">Progress</div>
+    <div class="nav-tab" onclick="showPage('history',this)">History</div>
+    <div class="nav-tab" onclick="showPage('stats',this)">Stats</div>
+  </div>
+  <div class="nav-sync">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span class="sync-label" id="sync-label">—</span>
+    <button class="btn btn-secondary btn-sm" onclick="forceSave()" style="padding:5px 12px;font-size:11px;">Save now</button>
+  </div>
+</nav>
+
+<div id="page-workout" class="page active">
+  <p class="page-title">Today's Session</p>
+  <p class="page-sub" id="workout-date-label">Select a week and day to load your plan</p>
+  <div class="card">
+    <div class="card-title">Select Week</div>
+    <div class="week-selector" id="week-selector"></div>
+    <div class="card-title" style="margin-top:1rem;">Select Day</div>
+    <div class="day-strip" id="day-strip"></div>
+  </div>
+  <div id="session-container"></div>
+</div>
+
+<div id="page-walks" class="page">
+  <p class="page-title">Walk Log</p>
+  <p class="page-sub">Record and track your walks</p>
+  <div class="card">
+    <div class="card-title">Log a Walk</div>
+    <div class="form-row">
+      <div class="form-group"><label>Date</label><input type="date" id="walk-date"></div>
+      <div class="form-group"><label>Week #</label><input type="number" id="walk-week" min="1" max="52" placeholder="e.g. 3"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Distance (km)</label><input type="number" id="walk-dist" step="0.1" placeholder="e.g. 5.2"></div>
+      <div class="form-group"><label>Duration (min)</label><input type="number" id="walk-dur" placeholder="e.g. 62"></div>
+      <div class="form-group"><label>Avg pace (min/km)</label><input type="text" id="walk-pace" placeholder="Auto-calc" readonly style="color:var(--text2)"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Incline / terrain</label>
+        <select id="walk-terrain"><option value="flat">Flat</option><option value="hills">Hills / incline</option><option value="mixed">Mixed</option><option value="treadmill">Treadmill (flat)</option><option value="treadmill-incline">Treadmill (incline)</option></select>
+      </div>
+      <div class="form-group"><label>Perceived effort (1–10)</label><input type="number" id="walk-effort" min="1" max="10" placeholder="5"></div>
+      <div class="form-group"><label>Steps (optional)</label><input type="number" id="walk-steps" placeholder="e.g. 6800"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Heart rate avg (optional)</label><input type="number" id="walk-hr" placeholder="e.g. 118"></div>
+      <div class="form-group"><label>Calories (optional)</label><input type="number" id="walk-cal" placeholder="e.g. 420"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:1rem;"><label>Notes</label><textarea id="walk-notes" placeholder="How did it feel? Any milestones?"></textarea></div>
+    <button class="btn btn-primary" onclick="saveWalk()">Save walk</button>
+  </div>
+  <div class="card"><div class="card-title">Walk history</div><div id="walk-history-list"></div></div>
+</div>
+
+<div id="page-progress" class="page">
+  <p class="page-title">Progress Photos</p>
+  <p class="page-sub">Photos and measurements — synced to your Google Drive</p>
+  <div class="inner-tabs">
+    <div class="inner-tab active" onclick="showInner('prog-add','prog',this)">Add entry</div>
+    <div class="inner-tab" onclick="showInner('prog-gallery','prog',this)">Gallery</div>
+    <div class="inner-tab" onclick="showInner('prog-compare','prog',this)">Compare</div>
+  </div>
+  <div id="prog-add" class="inner-page active">
+    <div class="card">
+      <div class="card-title">New progress entry</div>
+      <div class="form-row">
+        <div class="form-group"><label>Date</label><input type="date" id="prog-date"></div>
+        <div class="form-group"><label>Week #</label><input type="number" id="prog-week" min="0" max="52" placeholder="0 = starting stats"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Body weight (kg)</label><input type="number" id="prog-weight" step="0.1" placeholder="e.g. 142.5"></div>
+        <div class="form-group"><label>Waist (cm)</label><input type="number" id="prog-waist" step="0.1"></div>
+        <div class="form-group"><label>Chest (cm)</label><input type="number" id="prog-chest" step="0.1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Hips (cm)</label><input type="number" id="prog-hips" step="0.1"></div>
+        <div class="form-group"><label>Neck (cm)</label><input type="number" id="prog-neck" step="0.1"></div>
+        <div class="form-group"><label>Upper arm (cm)</label><input type="number" id="prog-arm" step="0.1"></div>
+        <div class="form-group"><label>Thigh (cm)</label><input type="number" id="prog-thigh" step="0.1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Blood pressure (optional)</label><input type="text" id="prog-bp" placeholder="e.g. 128/84"></div>
+        <div class="form-group"><label>Resting heart rate</label><input type="number" id="prog-rhr" placeholder="e.g. 74"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:1rem;"><label>Progress photo (front)</label>
+        <input type="file" id="prog-photo-front" accept="image/*" style="color:var(--text2);padding:8px 0;background:none;border:none;cursor:pointer;">
+      </div>
+      <div class="form-group" style="margin-bottom:1rem;"><label>Progress photo (side, optional)</label>
+        <input type="file" id="prog-photo-side" accept="image/*" style="color:var(--text2);padding:8px 0;background:none;border:none;cursor:pointer;">
+      </div>
+      <div class="form-group" style="margin-bottom:1rem;"><label>Notes / how you feel</label><textarea id="prog-notes" placeholder="Energy levels, mood, NSVs (non-scale victories)..."></textarea></div>
+      <button class="btn btn-primary" onclick="saveProgress()">Save entry</button>
+    </div>
+  </div>
+  <div id="prog-gallery" class="inner-page"><div id="prog-gallery-grid" class="photo-grid"></div></div>
+  <div id="prog-compare" class="inner-page">
+    <div class="form-row" style="max-width:400px;">
+      <div class="form-group"><label>Compare week A</label><select id="compare-a" onchange="renderCompare()"></select></div>
+      <div class="form-group"><label>Compare week B</label><select id="compare-b" onchange="renderCompare()"></select></div>
+    </div>
+    <div class="compare-grid" id="compare-grid"></div>
+    <div id="compare-stats"></div>
+  </div>
+</div>
+
+<div id="page-history" class="page">
+  <p class="page-title">Session History</p>
+  <p class="page-sub">All logged workouts</p>
+  <div class="inner-tabs">
+    <div class="inner-tab active" onclick="showInner('hist-strength','hist',this)">Strength sessions</div>
+    <div class="inner-tab" onclick="showInner('hist-walk','hist',this)">Walk sessions</div>
+  </div>
+  <div id="hist-strength" class="inner-page active"><div id="strength-history-list"></div></div>
+  <div id="hist-walk" class="inner-page"><div id="walk-history-list-2"></div></div>
+</div>
+
+<div id="page-stats" class="page">
+  <p class="page-title">Stats Dashboard</p>
+  <p class="page-sub">Your journey at a glance</p>
+  <div id="stats-comparison-photos" style="margin-bottom:1.5rem;"></div>
+  <div id="stats-metrics" style="margin-bottom:1.5rem;"></div>
+  <div id="stats-walk-summary"></div>
+</div>
+</div><!-- end main-app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── PLAN DATA ────────────────────────────────────────────────────────────────
+const PLAN={
+  1:{title:'Getting started',phase:1,days:{Mon:'walk',Tue:'rest',Wed:'walk',Thu:'strength',Fri:'rest',Sat:'walk',Sun:'rest'},
+    exercises:[
+      {name:'Seated leg press',sets:2,reps:'12',rest:'90s',note:'Light weight — learn the movement'},
+      {name:'Lat pulldown (machine)',sets:2,reps:'12',rest:'90s',note:'Controlled pace, full stretch at top'},
+      {name:'Chest press (machine)',sets:2,reps:'12',rest:'90s',note:'Elbows at 45°, not flared wide'},
+      {name:'Seated cable row',sets:2,reps:'12',rest:'90s',note:'Squeeze shoulder blades at end'},
+      {name:'Leg curl (machine)',sets:2,reps:'12',rest:'90s',note:'Slow on the way down'},
+      {name:'Seated dumbbell shoulder press',sets:2,reps:'10',rest:'90s',note:'Very light to start'},
+    ],tip:'Week 1: weights should feel almost too easy. You\'re training your nervous system. Showing up is the hard part.'},
+  2:{title:'Building rhythm',phase:1,days:{Mon:'walk',Tue:'rest',Wed:'walk',Thu:'strength',Fri:'rest',Sat:'walk',Sun:'rest'},
+    exercises:[
+      {name:'Seated leg press',sets:3,reps:'12',rest:'90s',note:'Add one set this week'},
+      {name:'Lat pulldown (machine)',sets:3,reps:'12',rest:'90s',note:''},
+      {name:'Chest press (machine)',sets:3,reps:'12',rest:'90s',note:''},
+      {name:'Seated cable row',sets:3,reps:'12',rest:'90s',note:''},
+      {name:'Leg curl (machine)',sets:3,reps:'12',rest:'90s',note:''},
+      {name:'Dumbbell curl',sets:2,reps:'12',rest:'60s',note:'Start light'},
+    ],tip:'Soreness 24–48h after is normal. Still sore day 3+? You went too heavy — dial back next session.'},
+  3:{title:'Add second strength day',phase:1,days:{Mon:'walk',Tue:'strength',Wed:'walk',Thu:'rest',Fri:'strength',Sat:'walk',Sun:'rest'},
+    exercises:[
+      {name:'Seated leg press',sets:3,reps:'10',rest:'90s',note:'Slightly heavier than week 2'},
+      {name:'Lat pulldown',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'Chest press (machine)',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'Seated cable row',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'Leg curl',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'Shoulder press (machine)',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'Plank (floor or incline on bench)',sets:3,reps:'20–30 sec',rest:'60s',note:''},
+    ],tip:'Two strength days drives adaptation that one session can\'t. You\'re training like an athlete.'},
+  4:{title:'Deload and assess',phase:1,days:{Mon:'walk',Tue:'rest',Wed:'walk',Thu:'strength',Fri:'rest',Sat:'walk',Sun:'rest'},
+    exercises:[
+      {name:'All exercises (deload)',sets:2,reps:'12',rest:'90s',note:'Use 70% of your best week 3 weights'},
+      {name:'Stretch and mobility',sets:1,reps:'15 min',rest:'—',note:'Hip flexors, quads, chest, back'},
+    ],tip:'Deload week: this is when muscles grow and the nervous system recovers. Non-optional.'},
+  5:{title:'Increase walk intensity',phase:2,days:{Mon:'walk',Tue:'strength',Wed:'rest',Thu:'walk',Fri:'strength',Sat:'walk',Sun:'rest'},
+    exercises:[
+      {name:'Leg press',sets:4,reps:'10',rest:'90s',note:'Heavier each week'},
+      {name:'Lat pulldown',sets:4,reps:'10',rest:'90s',note:''},
+      {name:'Incline chest press (machine)',sets:3,reps:'10',rest:'90s',note:'Switched to incline for upper chest'},
+      {name:'Seated cable row',sets:4,reps:'10',rest:'90s',note:''},
+      {name:'Romanian deadlift (light dumbbell)',sets:3,reps:'12',rest:'90s',note:'Hip hinge — crucial for back health'},
+      {name:'Plank',sets:3,reps:'30–40 sec',rest:'60s',note:''},
+      {name:'Dead bug',sets:3,reps:'8 each side',rest:'60s',note:'Core stability, excellent for lower back'},
+    ],tip:'Add incline to your walks this week — hills or 3–5% treadmill incline. Builds glutes powerfully.'},
+  6:{title:'Upper/lower split',phase:2,days:{Mon:'walk',Tue:'strength',Wed:'rest',Thu:'walk',Fri:'strength',Sat:'walk',Sun:'rest'},
+    exercises:[
+      {name:'UPPER — Chest press (machine)',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'UPPER — Lat pulldown',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'UPPER — Seated row',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'UPPER — Shoulder press',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'UPPER — Curl + tricep pushdown (superset)',sets:2,reps:'12',rest:'60s',note:''},
+      {name:'LOWER — Leg press',sets:4,reps:'10',rest:'90s',note:''},
+      {name:'LOWER — Leg curl',sets:3,reps:'12',rest:'90s',note:''},
+      {name:'LOWER — Romanian deadlift',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'LOWER — Calf raise',sets:3,reps:'15',rest:'60s',note:''},
+      {name:'LOWER — Plank + dead bug',sets:3,reps:'40s / 10 each',rest:'60s',note:''},
+    ],tip:'Upper/lower split: each muscle group gets 72+ hours to recover. You\'re training with real structure now.'},
+  7:{title:'Add a fourth walk',phase:2,days:{Mon:'walk',Tue:'strength',Wed:'walk',Thu:'walk',Fri:'strength',Sat:'walk',Sun:'rest'},
+    exercises:[
+      {name:'All week 6 exercises (+1 set each compound)',sets:'+1',reps:'Same',rest:'90s',note:'Add one set to each compound lift'},
+      {name:'Goblet squat (dumbbell)',sets:3,reps:'10',rest:'90s',note:'New this week — builds knee confidence'},
+    ],tip:'Four walks a week = 20km of movement. Testosterone is already measurably improving.'},
+  8:{title:'Deload 2',phase:2,days:{Mon:'walk',Tue:'rest',Wed:'walk',Thu:'strength',Fri:'rest',Sat:'walk',Sun:'rest'},
+    exercises:[
+      {name:'Full body circuit (light)',sets:2,reps:'15',rest:'60s',note:'65% of best weights'},
+      {name:'15 min mobility',sets:1,reps:'15 min',rest:'—',note:'Hips, thoracic spine, shoulders'},
+    ],tip:'Check-in week: retest 6-min walk distance. Record best weights. Take a progress photo.'},
+  9:{title:'Longer walks',phase:3,days:{Mon:'strength',Tue:'walk',Wed:'strength',Thu:'walk',Fri:'rest',Sat:'walk',Sun:'walk'},
+    exercises:[
+      {name:'Leg press',sets:4,reps:'8',rest:'2 min',note:'Heavier, fewer reps — strength phase begins'},
+      {name:'Romanian deadlift',sets:4,reps:'8',rest:'2 min',note:'Hip hinge focus'},
+      {name:'Goblet squat',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'Chest press',sets:4,reps:'8',rest:'2 min',note:''},
+      {name:'Lat pulldown',sets:4,reps:'8',rest:'2 min',note:''},
+      {name:'Seated row',sets:4,reps:'8',rest:'2 min',note:''},
+      {name:'Shoulder press',sets:3,reps:'10',rest:'90s',note:''},
+      {name:'Plank + dead bug + bird dog',sets:3,reps:'40s/10/10',rest:'60s',note:''},
+    ],tip:'8 reps at heavier weight builds more testosterone than high-rep light work. Real strength territory.'},
+  10:{title:'Intensity up',phase:3,days:{Mon:'walk',Tue:'strength',Wed:'walk',Thu:'rest',Fri:'strength',Sat:'walk',Sun:'walk'},
+    exercises:[
+      {name:'All lifts from week 9 (+5% weight)',sets:'Same',reps:'Same',rest:'Same',note:'5% heavier across the board'},
+      {name:'20-min brisk walk finisher after each strength session',sets:'—',reps:'20 min',rest:'—',note:'Capitalise on elevated metabolism'},
+    ],tip:'Post-strength walk is one of the most efficient fat-burning tools available.'},
+  11:{title:'Peak week',phase:3,days:{Mon:'strength',Tue:'walk',Wed:'strength',Thu:'walk',Fri:'walk',Sat:'strength',Sun:'rest'},
+    exercises:[
+      {name:'Leg press',sets:5,reps:'8',rest:'2 min',note:'Your heaviest yet'},
+      {name:'Romanian deadlift',sets:4,reps:'8',rest:'2 min',note:''},
+      {name:'Chest press',sets:4,reps:'8',rest:'2 min',note:''},
+      {name:'Lat pulldown',sets:4,reps:'8',rest:'2 min',note:''},
+      {name:'Goblet squat',sets:4,reps:'10',rest:'90s',note:''},
+      {name:'Seated row',sets:4,reps:'8',rest:'2 min',note:''},
+      {name:'Plank — aim for 60 seconds',sets:3,reps:'60 sec',rest:'60s',note:'Personal milestone'},
+    ],tip:'Your strongest week. Compare week 1 weights to now. That difference is who you\'re becoming.'},
+  12:{title:'Reflect and retest',phase:3,days:{Mon:'walk',Tue:'rest',Wed:'strength',Thu:'walk',Fri:'rest',Sat:'walk',Sun:'walk'},
+    exercises:[
+      {name:'Retest: 6-minute walk (max distance)',sets:'—',reps:'Max',rest:'—',note:'Compare to week 1 result'},
+      {name:'Full body moderate session',sets:3,reps:'10',rest:'90s',note:'80% effort'},
+      {name:'Record all working weights',sets:'—',reps:'—',rest:'—',note:'Baseline for next programme'},
+    ],tip:'12 weeks done. Measure, photograph, plan the next 12. This is just the beginning.'},
+};
+
+const DAY_LABELS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const FEEL_LABELS={1:'Terrible',2:'Tough',3:'OK',4:'Good',5:'Great'};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let DB = { sessions:[], walks:[], progress:[], exerciseLogs:{}, version:1 };
+let accessToken = null;
+let driveFileId = null;
+let saveTimer = null;
+let currentWeek = 1, currentDay = null;
+const GDRIVE_FILENAME = 'iron-journal-data.json';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+// ─── GOOGLE AUTH ──────────────────────────────────────────────────────────────
+let CLIENT_ID = localStorage.getItem('ij_client_id') || '';
+
+function initWithClientId() {
+  const val = document.getElementById('client-id-input').value.trim();
+  if(!val) { alert('Please paste your Client ID first.'); return; }
+  CLIENT_ID = val;
+  localStorage.setItem('ij_client_id', CLIENT_ID);
+  startAuth();
+}
+
+function startAuth() {
+  if(!CLIENT_ID) return;
+  // Show GSI button
+  document.getElementById('client-id-section').style.display = 'none';
+  document.getElementById('gsi-button-container').style.display = 'flex';
+
+  google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp) => {
+      if(resp.error) { showSyncStatus('err','Auth error'); return; }
+      accessToken = resp.access_token;
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+      showSyncStatus('busy','Loading...');
+      await loadFromDrive();
+      initUI();
+    }
+  }).requestAccessToken();
+}
+
+// Auto-start if client ID saved
+window.addEventListener('load', () => {
+  if(CLIENT_ID) {
+    document.getElementById('client-id-input').value = CLIENT_ID;
+    // Attempt silent token (may need user click on some browsers)
+    setTimeout(startAuth, 800);
+  }
+});
+
+// ─── GOOGLE DRIVE ─────────────────────────────────────────────────────────────
+async function driveRequest(url, options={}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: { 'Authorization': 'Bearer ' + accessToken, ...(options.headers||{}) }
+  });
+  if(!res.ok) throw new Error('Drive API error: ' + res.status);
+  return res;
+}
+
+async function loadFromDrive() {
+  try {
+    // Search for existing file
+    const search = await driveRequest(
+      `https://www.googleapis.com/drive/v3/files?q=name='${GDRIVE_FILENAME}' and trashed=false&fields=files(id,name)`
+    );
+    const data = await search.json();
+    if(data.files && data.files.length > 0) {
+      driveFileId = data.files[0].id;
+      const content = await driveRequest(
+        `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`
+      );
+      const json = await content.json();
+      DB = { sessions:[], walks:[], progress:[], exerciseLogs:{}, version:1, ...json };
+      showSyncStatus('ok', 'Synced');
+    } else {
+      showSyncStatus('ok', 'New journal');
+    }
+  } catch(e) {
+    showSyncStatus('err', 'Load failed');
+    console.error(e);
+  }
+}
+
+async function saveToDrive() {
+  showSyncStatus('busy', 'Saving...');
+  try {
+    const body = JSON.stringify(DB);
+    if(driveFileId) {
+      await driveRequest(
+        `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,
+        { method:'PATCH', headers:{'Content-Type':'application/json'}, body }
+      );
+    } else {
+      // Create new file
+      const meta = await driveRequest(
+        'https://www.googleapis.com/drive/v3/files',
+        { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ name: GDRIVE_FILENAME, mimeType: 'application/json' }) }
+      );
+      const metaJson = await meta.json();
+      driveFileId = metaJson.id;
+      await driveRequest(
+        `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,
+        { method:'PATCH', headers:{'Content-Type':'application/json'}, body }
+      );
+    }
+    showSyncStatus('ok', 'Saved ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+  } catch(e) {
+    showSyncStatus('err', 'Save failed');
+    console.error(e);
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveToDrive, 2000);
+}
+
+function forceSave() { saveToDrive(); }
+
+function showSyncStatus(state, label) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = label;
+}
+
+// ─── UI INIT ──────────────────────────────────────────────────────────────────
+function initUI() {
+  const today = new Date().toISOString().split('T')[0];
+  ['walk-date','prog-date'].forEach(id => { const el = document.getElementById(id); if(el) el.value = today; });
+  renderWeekSelector();
+  renderDayStrip();
+  renderWalkHistory();
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+function showPage(p, tabEl) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  if(tabEl) tabEl.classList.add('active');
+  if(p==='stats') renderStats();
+  if(p==='history') renderHistory();
+  if(p==='progress') { renderGallery(); renderCompareSelects(); }
+  if(p==='walks') renderWalkHistory();
+}
+
+function showInner(id, group, tabEl) {
+  const tabs = tabEl?.closest('.inner-tabs') || tabEl?.parentElement;
+  document.querySelectorAll('#page-'+group+' .inner-page').forEach(el => el.classList.remove('active'));
+  if(tabs) tabs.querySelectorAll('.inner-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(tabEl) tabEl.classList.add('active');
+  if(id==='prog-gallery') renderGallery();
+  if(id==='prog-compare') { renderCompareSelects(); renderCompare(); }
+  if(id==='hist-walk') renderWalkHistoryInner();
+}
+
+// ─── WEEK / DAY ───────────────────────────────────────────────────────────────
+function renderWeekSelector() {
+  const el = document.getElementById('week-selector');
+  el.innerHTML = Object.keys(PLAN).map(wk => {
+    const w = PLAN[wk];
+    const done = DB.sessions.some(s => s.week == wk);
+    return `<div class="wk-btn ${currentWeek==wk?'active':''} ${done?'done':''}" onclick="selectWeek(${wk})">
+      <div class="wk-num">${String(wk).padStart(2,'0')}</div>
+      <div class="wk-phase">Ph ${w.phase}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectWeek(wk) {
+  currentWeek = wk; currentDay = null;
+  renderWeekSelector(); renderDayStrip();
+  document.getElementById('session-container').innerHTML = '';
+  document.getElementById('workout-date-label').textContent = `Week ${wk} — ${PLAN[wk].title}`;
+}
+
+function renderDayStrip() {
+  const w = PLAN[currentWeek];
+  const el = document.getElementById('day-strip');
+  el.innerHTML = DAY_LABELS.map(day => {
+    const type = w.days[day]||'rest';
+    const cls = type==='walk'?'walk-day':type==='strength'?'strength-day':type==='combo'?'combo-day':'rest-day';
+    const icon = type==='walk'?'🚶':type==='strength'?'🏋':type==='combo'?'💪':'💤';
+    return `<div class="day-btn ${cls} ${currentDay===day?'active':''}" onclick="selectDay('${day}')">${day} ${icon}</div>`;
+  }).join('');
+}
+
+function selectDay(day) { currentDay = day; renderDayStrip(); renderSession(); }
+
+// ─── SESSION ──────────────────────────────────────────────────────────────────
+function renderSession() {
+  const w = PLAN[currentWeek];
+  const type = w.days[currentDay]||'rest';
+  const container = document.getElementById('session-container');
+
+  if(type==='rest') {
+    container.innerHTML = `<div class="card"><div style="text-align:center;padding:2rem;">
+      <div style="font-size:32px;margin-bottom:12px;">💤</div>
+      <p style="font-weight:500;">Rest day</p>
+      <p style="color:var(--text2);font-size:14px;margin-top:6px;">Recovery is where adaptation happens.</p>
+    </div></div>`;
+    return;
+  }
+
+  const logKey = `${currentWeek}_${currentDay}`;
+  const saved = DB.sessions.find(s => s.week==currentWeek && s.day==currentDay);
+
+  if(type==='walk') {
+    container.innerHTML = `<div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <span class="badge badge-green">Walk day — Week ${currentWeek}</span>
+        <span style="font-size:13px;color:var(--text3);">${currentDay}</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Distance (km)</label><input type="number" id="q-dist" step="0.1" value="${saved?.dist||''}" placeholder="5.0"></div>
+        <div class="form-group"><label>Duration (min)</label><input type="number" id="q-dur" value="${saved?.dur||''}" placeholder="65"></div>
+        <div class="form-group"><label>Effort (1–10)</label><input type="number" id="q-effort" min="1" max="10" value="${saved?.effort||''}" placeholder="5"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:1rem;"><label>Notes</label><textarea id="q-notes" placeholder="How did it go?">${saved?.notes||''}</textarea></div>
+      <div class="card-title">How did you feel?</div>
+      <div class="feel-row" id="walk-feel-row" style="margin-bottom:1rem;">
+        ${[1,2,3,4,5].map(n=>`<div class="feel-opt ${saved?.feel==n?'sel-'+n:''}" onclick="setWalkFeel(${n})">${FEEL_LABELS[n]}</div>`).join('')}
+      </div>
+      <button class="btn btn-primary" onclick="saveQuickWalk()">Save walk</button>
+    </div>`;
+    window._walkFeel = saved?.feel||null;
+    return;
+  }
+
+  // STRENGTH
+  const exercises = w.exercises;
+  let html = `<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <span class="badge badge-blue">Strength session — Week ${currentWeek}</span>
+      <span style="font-size:13px;color:var(--text3);">${currentDay}</span>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:1.5rem;font-size:13px;color:var(--accent2);">${w.tip}</div>`;
+
+  exercises.forEach((ex, i) => {
+    const exKey = `${logKey}_${i}`;
+    const exLog = DB.exerciseLogs[exKey] || {sets:[], feel:null};
+    const numSets = typeof ex.sets==='number'?ex.sets:3;
+    const sets = exLog.sets.length===numSets ? exLog.sets : Array(numSets).fill({kg:'',reps:''});
+
+    html += `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;">
+      <div style="margin-bottom:8px;">
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-target">${ex.sets} sets × ${ex.reps} | rest ${ex.rest}</div>
+        ${ex.note?`<div class="ex-note">${ex.note}</div>`:''}
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding-bottom:4px;display:grid;grid-template-columns:40px 90px 90px 1fr;gap:8px;">
+        <span>Set</span><span>Weight (kg)</span><span>Reps done</span><span></span></div>`;
+
+    for(let s=0;s<numSets;s++){
+      const sv=sets[s]||{kg:'',reps:''};
+      html+=`<div class="set-row">
+        <span class="set-num">${s+1}</span>
+        <input type="number" step="0.5" placeholder="kg" value="${sv.kg||''}" onchange="logSet(${i},${s},'kg',this.value)">
+        <input type="number" placeholder="reps" value="${sv.reps||''}" onchange="logSet(${i},${s},'reps',this.value)">
+        <span style="font-size:12px;color:var(--text3);">${ex.reps} target</span>
+      </div>`;
+    }
+
+    html+=`<div style="margin-top:10px;">
+      <div class="card-title" style="margin-bottom:6px;">How did this feel?</div>
+      <div class="feel-row" id="feel_${i}">
+        ${[1,2,3,4,5].map(n=>`<div class="feel-opt ${exLog.feel==n?'sel-'+n:''}" onclick="setExFeel(${i},${n})">${FEEL_LABELS[n]}</div>`).join('')}
+      </div></div></div>`;
+  });
+
+  html+=`<div class="form-group" style="margin-bottom:1rem;"><label>Session notes</label>
+    <textarea id="session-notes" placeholder="Energy, PRs, observations...">${saved?.notes||''}</textarea></div>
+  <button class="btn btn-primary" onclick="saveSession()">Save session</button></div>`;
+
+  container.innerHTML = html;
+}
+
+// ─── LOGGING ──────────────────────────────────────────────────────────────────
+function logSet(exIdx, setIdx, field, val) {
+  const key = `${currentWeek}_${currentDay}_${exIdx}`;
+  if(!DB.exerciseLogs[key]) DB.exerciseLogs[key]={sets:[],feel:null};
+  while(DB.exerciseLogs[key].sets.length<=setIdx) DB.exerciseLogs[key].sets.push({kg:'',reps:''});
+  DB.exerciseLogs[key].sets[setIdx]={...DB.exerciseLogs[key].sets[setIdx],[field]:val};
+  scheduleSave();
+}
+
+function setExFeel(exIdx, feel) {
+  const key=`${currentWeek}_${currentDay}_${exIdx}`;
+  if(!DB.exerciseLogs[key]) DB.exerciseLogs[key]={sets:[],feel:null};
+  DB.exerciseLogs[key].feel=feel;
+  scheduleSave();
+  document.getElementById('feel_'+exIdx)?.querySelectorAll('.feel-opt').forEach((el,i)=>{
+    el.className='feel-opt'+(i+1===feel?' sel-'+feel:'');
+  });
+}
+
+function setWalkFeel(feel) {
+  window._walkFeel=feel;
+  document.getElementById('walk-feel-row')?.querySelectorAll('.feel-opt').forEach((el,i)=>{
+    el.className='feel-opt'+(i+1===feel?' sel-'+feel:'');
+  });
+}
+
+function saveSession() {
+  const w=PLAN[currentWeek];
+  const notes=document.getElementById('session-notes')?.value||'';
+  const record={week:currentWeek,day:currentDay,type:'strength',date:new Date().toISOString(),notes,
+    exercises:w.exercises.map((ex,i)=>({name:ex.name,log:DB.exerciseLogs[`${currentWeek}_${currentDay}_${i}`]||{}}))};
+  DB.sessions=DB.sessions.filter(s=>!(s.week==currentWeek&&s.day==currentDay));
+  DB.sessions.push(record);
+  renderWeekSelector();
+  scheduleSave();
+  toast('Session saved!');
+}
+
+function saveQuickWalk() {
+  const dist=parseFloat(document.getElementById('q-dist')?.value);
+  const dur=parseFloat(document.getElementById('q-dur')?.value);
+  const record={week:currentWeek,day:currentDay,date:new Date().toISOString(),
+    dist,dur,effort:parseFloat(document.getElementById('q-effort')?.value)||null,
+    notes:document.getElementById('q-notes')?.value||'',feel:window._walkFeel,
+    pace:dist&&dur?(dur/dist).toFixed(1):null};
+  DB.walks=DB.walks.filter(w=>!(w.week==currentWeek&&w.day==currentDay));
+  DB.walks.push(record);
+  scheduleSave();
+  toast('Walk saved!');
+}
+
+// ─── WALKS TAB ────────────────────────────────────────────────────────────────
+function saveWalk() {
+  const dist=parseFloat(document.getElementById('walk-dist').value);
+  const dur=parseFloat(document.getElementById('walk-dur').value);
+  const record={id:Date.now(),
+    date:document.getElementById('walk-date').value||new Date().toISOString().split('T')[0],
+    week:parseInt(document.getElementById('walk-week').value)||null,
+    dist,dur,pace:dist&&dur?(dur/dist).toFixed(1):null,
+    terrain:document.getElementById('walk-terrain').value,
+    effort:parseInt(document.getElementById('walk-effort').value)||null,
+    steps:parseInt(document.getElementById('walk-steps').value)||null,
+    hr:parseInt(document.getElementById('walk-hr').value)||null,
+    calories:parseInt(document.getElementById('walk-cal').value)||null,
+    notes:document.getElementById('walk-notes').value};
+  DB.walks.push(record);
+  ['walk-dist','walk-dur','walk-effort','walk-steps','walk-hr','walk-cal','walk-notes','walk-week'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('walk-pace').value='';
+  scheduleSave();
+  renderWalkHistory();
+  toast('Walk logged!');
+}
+
+function renderWalkHistory() {
+  const el=document.getElementById('walk-history-list');
+  if(!el) return;
+  if(!DB.walks.length){el.innerHTML='<div class="empty"><div class="empty-icon">🚶</div><p>No walks logged yet</p></div>';return;}
+  const sorted=[...DB.walks].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  el.innerHTML=sorted.map(w=>`<div class="history-item">
+    <div class="hi-left">
+      <div class="hi-title">${w.dist||'—'}km ${w.dur?'· '+w.dur+' min':''} ${w.pace?'· '+w.pace+' min/km':''}</div>
+      <div class="hi-sub">${w.terrain||''} ${w.effort?'· Effort: '+w.effort+'/10':''} ${w.steps?'· '+w.steps+' steps':''} ${w.notes?'· '+w.notes.substring(0,60):''}</div>
+    </div>
+    <div class="hi-right"><div class="hi-date">${w.week?'Wk '+w.week+' · ':''}${w.date||'—'}</div></div>
+  </div>`).join('');
+}
+
+// ─── PROGRESS ─────────────────────────────────────────────────────────────────
+function saveProgress() {
+  const frontFile=document.getElementById('prog-photo-front').files[0];
+  const sideFile=document.getElementById('prog-photo-side').files[0];
+  function readFile(file,cb){if(!file){cb(null);return;}const r=new FileReader();r.onload=e=>cb(e.target.result);r.readAsDataURL(file);}
+  readFile(frontFile,frontData=>{
+    readFile(sideFile,sideData=>{
+      const record={id:Date.now(),
+        date:document.getElementById('prog-date').value||new Date().toISOString().split('T')[0],
+        week:parseInt(document.getElementById('prog-week').value)||0,
+        weight:parseFloat(document.getElementById('prog-weight').value)||null,
+        waist:parseFloat(document.getElementById('prog-waist').value)||null,
+        chest:parseFloat(document.getElementById('prog-chest').value)||null,
+        hips:parseFloat(document.getElementById('prog-hips').value)||null,
+        neck:parseFloat(document.getElementById('prog-neck').value)||null,
+        arm:parseFloat(document.getElementById('prog-arm').value)||null,
+        thigh:parseFloat(document.getElementById('prog-thigh').value)||null,
+        bp:document.getElementById('prog-bp').value||null,
+        rhr:parseInt(document.getElementById('prog-rhr').value)||null,
+        notes:document.getElementById('prog-notes').value,
+        photoFront:frontData,photoSide:sideData};
+      DB.progress.push(record);
+      ['prog-weight','prog-waist','prog-chest','prog-hips','prog-neck','prog-arm','prog-thigh','prog-bp','prog-rhr','prog-notes','prog-week'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+      document.getElementById('prog-photo-front').value='';
+      document.getElementById('prog-photo-side').value='';
+      scheduleSave();
+      toast('Progress entry saved!');
+    });
+  });
+}
+
+function renderGallery() {
+  const el=document.getElementById('prog-gallery-grid');
+  if(!el) return;
+  if(!DB.progress.length){el.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📸</div><p>No entries yet</p></div>';return;}
+  const sorted=[...DB.progress].sort((a,b)=>a.week-b.week);
+  el.innerHTML=sorted.map(p=>`<div class="photo-card">
+    ${p.photoFront?`<img src="${p.photoFront}" alt="Wk ${p.week}">`:`<div style="aspect-ratio:3/4;background:var(--surface3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;">No photo</div>`}
+    <div class="photo-meta">
+      <div class="photo-week">Week ${p.week}</div>
+      <div style="font-size:11px;color:var(--text3);">${p.date}</div>
+      ${p.weight?`<div style="font-size:12px;color:var(--text2);">${p.weight}kg${p.waist?' · '+p.waist+'cm':''}</div>`:''}
+    </div></div>`).join('');
+}
+
+function renderCompareSelects() {
+  const sorted=[...DB.progress].sort((a,b)=>a.week-b.week);
+  const opts=sorted.map(p=>`<option value="${p.id}">Week ${p.week} — ${p.date}${p.weight?' ('+p.weight+'kg)':''}</option>`).join('');
+  ['compare-a','compare-b'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts||'<option>No entries</option>';});
+  if(sorted.length>=2){document.getElementById('compare-a').value=sorted[0].id;document.getElementById('compare-b').value=sorted[sorted.length-1].id;}
+  renderCompare();
+}
+
+function renderCompare() {
+  const aId=parseInt(document.getElementById('compare-a')?.value);
+  const bId=parseInt(document.getElementById('compare-b')?.value);
+  const a=DB.progress.find(p=>p.id===aId), b=DB.progress.find(p=>p.id===bId);
+  const grid=document.getElementById('compare-grid');
+  const statsEl=document.getElementById('compare-stats');
+  if(!grid) return;
+  function card(p,label,accent){
+    if(!p) return `<div class="compare-card"><div class="compare-placeholder"><span style="color:${accent}">${label}</span></div><div class="compare-label"><div style="font-family:var(--mono);font-size:13px;color:${accent}">${label}</div></div></div>`;
+    return `<div class="compare-card">
+      ${p.photoFront?`<img src="${p.photoFront}">`:`<div class="compare-placeholder"><span style="font-size:32px">📸</span><span style="color:var(--text3);font-size:13px;">No photo</span></div>`}
+      <div class="compare-label"><div style="font-family:var(--mono);font-size:13px;color:${accent}">Week ${p.week}</div>
+      <div style="font-size:12px;color:var(--text2);">${p.date}${p.weight?' · '+p.weight+'kg':''}</div></div></div>`;
+  }
+  grid.innerHTML=card(a,'Start','var(--accent3)')+card(b,'Latest','var(--accent)');
+  if(a&&b){
+    const fields=[{k:'weight',l:'Weight (kg)'},{k:'waist',l:'Waist (cm)'},{k:'chest',l:'Chest (cm)'},{k:'hips',l:'Hips (cm)'},{k:'arm',l:'Arm (cm)'}];
+    const rows=fields.filter(f=>a[f.k]&&b[f.k]).map(f=>{
+      const diff=(b[f.k]-a[f.k]).toFixed(1);
+      const good=f.k==='weight'||f.k==='waist'||f.k==='hips'?parseFloat(diff)<0:parseFloat(diff)>0;
+      return `<tr><td style="color:var(--text2);font-size:13px;padding:6px 0;">${f.l}</td>
+        <td style="font-family:var(--mono);font-size:13px;padding:6px 12px;">${a[f.k]}</td>
+        <td style="font-family:var(--mono);font-size:13px;padding:6px 12px;">${b[f.k]}</td>
+        <td style="font-family:var(--mono);font-size:13px;padding:6px 0;" class="${good?'delta-pos':'delta-neg'}">${parseFloat(diff)>0?'+':''}${diff}</td></tr>`;
+    }).join('');
+    if(rows) statsEl.innerHTML=`<div class="card"><div class="card-title">Measurement changes</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>${['Measurement','Start','Now','Change'].map(h=>`<th style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:0 12px 8px 0;text-align:left;">${h}</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
+  }
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const el=document.getElementById('strength-history-list');
+  if(!el) return;
+  if(!DB.sessions.length){el.innerHTML='<div class="empty"><div class="empty-icon">🏋</div><p>No sessions logged yet</p></div>';return;}
+  const sorted=[...DB.sessions].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  el.innerHTML=sorted.map(s=>{
+    const exSummary=s.exercises?.map(e=>{
+      const sets=e.log?.sets?.filter(x=>x.kg||x.reps);
+      if(!sets?.length) return `<span style="color:var(--text3)">${e.name}</span>`;
+      const best=sets.reduce((m,x)=>parseFloat(x.kg)>parseFloat(m.kg)?x:m,sets[0]);
+      return `${e.name}: ${best.kg||'?'}kg×${best.reps||'?'}`;
+    }).join(' · ')||'';
+    return `<div class="history-item">
+      <div class="hi-left">
+        <div class="hi-title">Week ${s.week} — ${s.day} <span class="badge badge-blue" style="margin-left:8px;">Strength</span></div>
+        <div class="hi-sub" style="margin-top:4px;font-size:12px;">${exSummary.substring(0,130)}</div>
+        ${s.notes?`<div class="hi-sub" style="font-style:italic;">${s.notes.substring(0,80)}</div>`:''}
+      </div>
+      <div class="hi-right"><div class="hi-date">${(s.date||'').split('T')[0]}</div></div>
+    </div>`;
+  }).join('');
+  renderWalkHistoryInner();
+}
+
+function renderWalkHistoryInner() {
+  const el=document.getElementById('walk-history-list-2');
+  if(!el) return;
+  if(!DB.walks.length){el.innerHTML='<div class="empty"><div class="empty-icon">🚶</div><p>No walks logged yet</p></div>';return;}
+  const sorted=[...DB.walks].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  el.innerHTML=sorted.map(w=>`<div class="history-item">
+    <div class="hi-left">
+      <div class="hi-title">${w.dist||'?'}km · ${w.dur||'?'} min${w.pace?' · '+w.pace+' min/km':''}</div>
+      <div class="hi-sub">${w.terrain||''} ${w.effort?'· Effort '+w.effort+'/10':''} ${w.steps?'· '+w.steps+' steps':''}</div>
+    </div>
+    <div class="hi-right"><div class="hi-date">${w.week?'Wk '+w.week+' · ':''}${w.date||'—'}</div></div>
+  </div>`).join('');
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const sorted=[...DB.progress].sort((a,b)=>a.week-b.week);
+  const first=sorted[0], latest=sorted[sorted.length-1];
+  const photosEl=document.getElementById('stats-comparison-photos');
+  if(first||latest){
+    function photoPanel(p,label,accent){
+      if(!p) return `<div class="compare-card"><div class="compare-placeholder"><span style="color:${accent}">${label}</span><span style="color:var(--text3);font-size:13px;">Add progress entry</span></div><div class="compare-label"><div style="font-family:var(--mono);color:${accent}">${label}</div></div></div>`;
+      return `<div class="compare-card">
+        ${p.photoFront?`<img src="${p.photoFront}">`:`<div class="compare-placeholder"><span style="font-size:36px">📸</span><span style="color:var(--text3)">No photo</span></div>`}
+        <div class="compare-label"><div style="font-family:var(--mono);color:${accent}">${label} — Week ${p.week}</div>
+        <div style="font-size:12px;color:var(--text2);">${p.date}${p.weight?' · '+p.weight+'kg':''}</div>
+        ${p.waist?`<div style="font-size:12px;color:var(--text2);">Waist: ${p.waist}cm</div>`:''}
+        ${p.notes?`<div style="font-size:12px;color:var(--text2);font-style:italic;margin-top:4px;">${p.notes.substring(0,80)}</div>`:''}
+        </div></div>`;
+    }
+    photosEl.innerHTML=`<div class="compare-grid">${photoPanel(first,'Starting stats','var(--accent3)')}${photoPanel(latest,'Latest','var(--accent)')}</div>`;
+  }
+
+  const metricsEl=document.getElementById('stats-metrics');
+  if(first){
+    const wDiff=first.weight&&latest&&latest.weight&&latest!==first?(latest.weight-first.weight).toFixed(1):null;
+    const waDiff=first.waist&&latest&&latest.waist&&latest!==first?(latest.waist-first.waist).toFixed(1):null;
+    metricsEl.innerHTML=`<div class="card"><div class="card-title">Progress summary</div>
+      <div class="stats-grid">
+        ${first.weight?`<div class="stat-card"><div class="stat-label">Start weight</div><div class="stat-val">${first.weight}<span class="stat-unit"> kg</span></div></div>`:''}
+        ${latest&&latest!==first&&latest.weight?`<div class="stat-card"><div class="stat-label">Current weight</div><div class="stat-val">${latest.weight}<span class="stat-unit"> kg</span></div>${wDiff?`<div class="stat-delta ${parseFloat(wDiff)<0?'delta-pos':'delta-neg'}">${parseFloat(wDiff)>0?'+':''}${wDiff}kg</div>`:''}</div>`:''}
+        ${first.waist?`<div class="stat-card"><div class="stat-label">Start waist</div><div class="stat-val">${first.waist}<span class="stat-unit"> cm</span></div></div>`:''}
+        ${latest&&latest!==first&&latest.waist?`<div class="stat-card"><div class="stat-label">Current waist</div><div class="stat-val">${latest.waist}<span class="stat-unit"> cm</span></div>${waDiff?`<div class="stat-delta ${parseFloat(waDiff)<0?'delta-pos':'delta-neg'}">${parseFloat(waDiff)>0?'+':''}${waDiff}cm</div>`:''}</div>`:''}
+        <div class="stat-card"><div class="stat-label">Sessions logged</div><div class="stat-val">${DB.sessions.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Walks logged</div><div class="stat-val">${DB.walks.length}</div></div>
+      </div></div>`;
+  } else {
+    metricsEl.innerHTML=`<div class="card"><div style="text-align:center;padding:2rem;color:var(--text3);">Add your first progress entry to see stats here</div></div>`;
+  }
+
+  const walkEl=document.getElementById('stats-walk-summary');
+  if(DB.walks.length){
+    const totalDist=DB.walks.reduce((s,w)=>s+(w.dist||0),0);
+    const totalTime=DB.walks.reduce((s,w)=>s+(w.dur||0),0);
+    const paces=DB.walks.filter(w=>w.pace).map(w=>parseFloat(w.pace));
+    const bestPace=paces.length?Math.min(...paces).toFixed(1):'—';
+    walkEl.innerHTML=`<div class="card"><div class="card-title">Walk statistics</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total distance</div><div class="stat-val">${totalDist.toFixed(1)}<span class="stat-unit"> km</span></div></div>
+        <div class="stat-card"><div class="stat-label">Total time</div><div class="stat-val">${Math.round(totalTime/60)}<span class="stat-unit"> hrs</span></div></div>
+        <div class="stat-card"><div class="stat-label">Total walks</div><div class="stat-val">${DB.walks.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Best pace</div><div class="stat-val">${bestPace}<span class="stat-unit"> min/km</span></div></div>
+      </div></div>`;
+  }
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}
+
+// ─── WALK PACE AUTO-CALC ──────────────────────────────────────────────────────
+document.addEventListener('input',e=>{
+  if(['walk-dist','walk-dur'].includes(e.target.id)){
+    const dist=parseFloat(document.getElementById('walk-dist')?.value);
+    const dur=parseFloat(document.getElementById('walk-dur')?.value);
+    const p=document.getElementById('walk-pace');
+    if(p&&dist&&dur) p.value=(dur/dist).toFixed(1)+' min/km'; else if(p) p.value='';
+  }
+});
+</script>
+</body>
+</html>
