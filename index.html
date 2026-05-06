@@ -619,7 +619,9 @@ function renderSession() {
   }
 
   const logKey = `${currentWeek}_${currentDay}`;
-  const saved = DB.sessions.find(s => s.week==currentWeek && s.day==currentDay);
+  const savedSession = DB.sessions.find(s => s.week==currentWeek && s.day==currentDay);
+  const savedWalk = DB.walks.find(w => w.week==currentWeek && w.day==currentDay);
+  const saved = type==='walk' ? savedWalk : savedSession;
 
   if(type==='walk') {
     container.innerHTML = `<div class="card">
